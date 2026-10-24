@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="记账看板">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#e9e3d7">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#3a4149">
+<title>记账看板</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html {
+    background: linear-gradient(168deg, #ece5d5 0%, #dde6d8 34%, #d3dfe6 68%, #e3d9dd 100%);
+    background-attachment: fixed;
+  }
+  body {
+    margin: 0;
+    min-height: 100dvh;
+    background: linear-gradient(168deg, #ece5d5 0%, #dde6d8 34%, #d3dfe6 68%, #e3d9dd 100%);
+    color: #39413f;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.45;
+  }
+  .wrap {
+    max-width: 430px; margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));
+  }
+  header { padding: 4px 2px 12px; }
+  header .ym { font-size: 13px; letter-spacing: .12em; color: #71807a; }
+  header h1 { margin: 2px 0 0; font-size: 26px; font-weight: 700; }
+  .card {
+    background: rgba(255,255,255,.52);
+    border: 1px solid rgba(255,255,255,.65);
+    border-radius: 18px;
+    padding: 16px;
+    margin-bottom: 14px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(90,105,95,.08);
+  }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card .sub { font-size: 12px; color: #7a877f; margin-bottom: 10px; }
+  /* 顶部胶囊 */
+  .tabs {
+    position: relative; display: flex; padding: 4px; margin-bottom: 14px;
+    background: rgba(255,255,255,.45); border: 1px solid rgba(255,255,255,.6);
+    border-radius: 999px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  }
+  #pill {
+    position: absolute; top: 4px; left: 4px; height: calc(100% - 8px);
+    background: #5b7fa6; border-radius: 999px; z-index: 0;
+  }
+  #pill.anim { transition: transform .5s cubic-bezier(.22,1,.36,1), width .5s cubic-bezier(.22,1,.36,1); }
+  .tabs button {
+    flex: 1; position: relative; z-index: 1; border: 0; background: transparent;
+    padding: 9px 0; font-size: 15px; color: #5a6862; cursor: pointer;
+    transition: color .5s;
+  }
+  .tabs button.on { color: #fff; font-weight: 600; }
+  /* 横向轨道 */
+  #viewport { overflow: hidden; touch-action: pan-y; }
+  #viewport.animh { transition: height .5s cubic-bezier(.22,1,.36,1); }
+  #track { display: flex; gap: 14px; align-items: flex-start; }
+  #track.anim { transition: transform .5s cubic-bezier(.22,1,.36,1); }
+  .panel { flex: 0 0 100%; min-width: 0; }
+  /* 结余大卡 */
+  .big-balance { font-size: 38px; font-weight: 750; margin: 2px 0 4px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; }
+  .bar-row .lab { width: 34px; color: #66736c; flex: none; }
+  .bar-track { flex: 1; height: 9px; border-radius: 99px; background: rgba(90,110,100,.14); overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 99px; }
+  .bar-fill.inc { background: #7d9b76; width: 100%; }
+  .bar-fill.exp { background: #c0857d; }
+  .bar-row .val { min-width: 86px; text-align: right; font-variant-numeric: tabular-nums; flex: none; }
+  /* 指标小卡片：一行 2 个 */
+  .sec-title { font-size: 16px; margin: 0 2px 10px; }
+  .mgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .mcard {
+    background: rgba(255,255,255,.52); border: 1px solid rgba(255,255,255,.65);
+    border-radius: 16px; padding: 12px 14px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 6px 18px rgba(90,105,95,.08);
+  }
+  .mcard .k { font-size: 12px; color: #77847c; white-space: nowrap; }
+  .mcard .v { font-size: 18px; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+  .neg { color: #b3564d; } .pos { color: #5d7f56; }
+  /* 饼图 */
+  .pie-box { position: relative; }
+  .pie-box svg { width: 100%; height: auto; display: block; }
+  .pie-box path.slice { cursor: pointer; transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .6s; transform-box: view-box; transform-origin: 176px 100px; }
+  .pie-center {
+    display: none;
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 118px; padding: 9px 6px; text-align: center; pointer-events: none;
+    background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.7);
+    border-radius: 14px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .pie-center.show { display: block; }
+  .pie-center .n { font-size: 14px; font-weight: 650; white-space: nowrap; }
+  .pie-center .p { font-size: 12px; color: #66736c; white-space: nowrap; }
+  .pie-center .a { font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 7px 12px; margin-top: 10px; }
+  .legend .li { display: flex; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; overflow: hidden; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .legend .nm { flex: none; } .legend .pc { flex: none; color: #77847c; }
+  .legend .am { flex: none; font-variant-numeric: tabular-nums; }
+  /* 列表行 */
+  .row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 7px 0; border-bottom: 1px dashed rgba(100,115,105,.16); }
+  .row:last-child { border-bottom: 0; }
+  .row .l { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .r { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; }
+  .row .meta { font-size: 12px; color: #7a877f; }
+  .cdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  /* 每日柱状图 */
+  #dailyChart { position: relative; height: 138px; cursor: pointer; }
+  #dailyChart .zero { position: absolute; left: 0; right: 0; border-top: 1px solid rgba(90,110,100,.35); }
+  #dailyChart .slot { position: absolute; top: 0; height: 100%; }
+  #dailyChart .dbar {
+    position: absolute; left: 50%; width: 7px; border-radius: 3px; background: #93a8bb;
+    transform: translateX(-50%); transition: transform .6s cubic-bezier(.22,1,.36,1), opacity .6s, filter .6s;
+  }
+  #dailyChart .dbar.peak { background: #5b7fa6; }
+  #dailyChart .dbar.refund { background: #7d9b76; }
+  #dailyChart.dim .dbar { opacity: .4; }
+  #dailyChart .dbar.sel { opacity: 1 !important; filter: brightness(1.18); }
+  #dailyChart .peaklab {
+    position: absolute; transform: translateX(-50%); font-size: 10px; color: #4d6a88;
+    white-space: nowrap; font-variant-numeric: tabular-nums; pointer-events: none;
+  }
+  .capsule {
+    display: block; width: fit-content; margin: 10px auto 0; padding: 6px 14px;
+    background: rgba(91,127,166,.14); border-radius: 999px; font-size: 13px;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  /* 月度表与组合图 */
+  table.month { width: 100%; border-collapse: collapse; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+  table.month th, table.month td { padding: 6px 2px; text-align: right; white-space: nowrap; }
+  table.month th:first-child, table.month td:first-child { text-align: left; }
+  table.month thead th { color: #77847c; font-weight: 500; border-bottom: 1px solid rgba(100,115,105,.25); }
+  table.month tbody tr { border-bottom: 1px dashed rgba(100,115,105,.14); }
+  table.month tfoot td { font-weight: 700; border-top: 1.5px solid rgba(100,115,105,.35); }
+  table.month tr.total td { font-weight: 700; background: rgba(255,255,255,.38); border-bottom: 1.5px solid rgba(100,115,105,.35); }
+  .analysis .a-sec { font-size: 14.5px; font-weight: 700; margin: 12px 0 2px; }
+  .analysis .a-sec:first-of-type { margin-top: 2px; }
+  .analysis .a-item { padding: 7px 0 7px 2px; border-bottom: 1px dashed rgba(100,115,105,.16); font-size: 14px; }
+  .analysis .a-item:last-child { border-bottom: 0; }
+  /* 分类占比条与名次徽章 */
+  .cat-bar { height: 6px; border-radius: 99px; background: rgba(90,110,100,.12); overflow: hidden; margin: 1px 0 9px; }
+  .cat-bar > div { height: 100%; border-radius: 99px; }
+  .rank { display: inline-block; min-width: 21px; text-align: center; border-radius: 7px; padding: 1px 3px; margin-right: 7px; font-weight: 700; font-size: 13px; color: #77847c; background: rgba(90,110,100,.08); }
+  .rank.r1 { background: #d9a94f; color: #fff; }
+  .rank.r2 { background: #a9b6ba; color: #fff; }
+  .rank.r3 { background: #c98a68; color: #fff; }
+  footer { text-align: center; font-size: 12px; color: #84918a; padding: 2px 0 0; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="ym" id="ymLabel"></div>
+    <h1>本月账本</h1>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <div id="pill"></div>
+    <button type="button" data-i="0" class="on">总览</button>
+    <button type="button" data-i="1">支出</button>
+    <button type="button" data-i="2">结余</button>
+  </nav>
+
+  <div id="viewport">
+    <div id="track">
+      <section class="panel" id="panel0"></section>
+      <section class="panel" id="panel1"></section>
+      <section class="panel" id="panel2"></section>
+    </div>
+  </div>
+
+  <footer>
+    <div>本页为打开时的快照 · 数据日期 <span id="snapDate"></span></div>
+    <div>数据来源：Google Sheet「个人支出管理」，每日自动刷新</div>
+  </footer>
+</div>
+<script>
+"use strict";
+const DATA = /*DATA_START*/
+{
+ "generated_for_date": "2026-10-23",
+ "overview": {
+  "ym": "2026-10",
+  "prev_ym": "2026-09",
+  "month_title": "2026年10月",
+  "income": 3989.28,
+  "prev_income": 9341.12,
+  "expense": 386.05,
+  "prev_expense": 1342.74,
+  "balance": 3603.23,
+  "mom_diff": -956.69,
+  "mom_pct": -71.2,
+  "max_single": {
+   "merchant": "Tutto Gustoso",
+   "amount": 84.02,
+   "date": "2026-10-22"
+  },
+  "refunds": 0.0,
+  "ytd_expense": 11443.1,
+  "daily_avg": 16.78,
+  "days_used": 23,
+  "expense_bar_pct": 9.7
+ },
+ "categories": [
+  {
+   "name": "餐饮",
+   "amount": 192.39
+  },
+  {
+   "name": "超市",
+   "amount": 10.0
+  },
+  {
+   "name": "购物",
+   "amount": 64.92
+  },
+  {
+   "name": "房租",
+   "amount": 0.0
+  },
+  {
+   "name": "水电网",
+   "amount": 0.0
+  },
+  {
+   "name": "交通",
+   "amount": 0.0
+  },
+  {
+   "name": "娱乐",
+   "amount": 0.0
+  },
+  {
+   "name": "医疗",
+   "amount": 0.0
+  },
+  {
+   "name": "旅行",
+   "amount": 78.74
+  },
+  {
+   "name": "订阅",
+   "amount": 0.0
+  },
+  {
+   "name": "转账",
+   "amount": 0.0
+  },
+  {
+   "name": "其他",
+   "amount": 40.0
+  }
+ ],
+ "total_expense": 386.05,
+ "pie": [
+  {
+   "name": "餐饮",
+   "amount": 192.39,
+   "pct": 49.8
+  },
+  {
+   "name": "旅行",
+   "amount": 78.74,
+   "pct": 20.4
+  },
+  {
+   "name": "购物",
+   "amount": 64.92,
+   "pct": 16.8
+  },
+  {
+   "name": "其他",
+   "amount": 40.0,
+   "pct": 10.4
+  },
+  {
+   "name": "超市",
+   "amount": 10.0,
+   "pct": 2.6
+  }
+ ],
+ "top10": [
+  {
+   "date": "2026-10-22",
+   "merchant": "Tutto Gustoso",
+   "amount": 84.02,
+   "cat": "餐饮"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Big Pines Lodge",
+   "amount": 78.74,
+   "cat": "旅行"
+  },
+  {
+   "date": "2026-10-12",
+   "merchant": "Pop Mart",
+   "amount": 64.92,
+   "cat": "购物"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Rueggenbach Brewing Co",
+   "amount": 59.46,
+   "cat": "餐饮"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Craft Burger & Brew",
+   "amount": 42.86,
+   "cat": "餐饮"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Caddo Lake Lighthouse",
+   "amount": 40.0,
+   "cat": "其他"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Walmart",
+   "amount": 10.0,
+   "cat": "超市"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮"
+  },
+  {
+   "date": "2026-10-13",
+   "merchant": "365 VEND",
+   "amount": 1.85,
+   "cat": "餐饮"
+  }
+ ],
+ "top_merchants": [
+  {
+   "name": "Tutto Gustoso",
+   "amount": 84.02,
+   "count": 1
+  },
+  {
+   "name": "Big Pines Lodge",
+   "amount": 78.74,
+   "count": 1
+  },
+  {
+   "name": "Pop Mart",
+   "amount": 64.92,
+   "count": 1
+  },
+  {
+   "name": "Rueggenbach Brewing Co",
+   "amount": 59.46,
+   "count": 1
+  },
+  {
+   "name": "Craft Burger & Brew",
+   "amount": 42.86,
+   "count": 1
+  }
+ ],
+ "daily": {
+  "start": "2026-09-25",
+  "end": "2026-10-22",
+  "days": [
+   {
+    "date": "2026-09-25",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-09-26",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-09-27",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-09-28",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-09-29",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-09-30",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-01",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-02",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-03",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-04",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-05",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-06",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-07",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-08",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-09",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-10",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-11",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-12",
+    "amount": 64.92
+   },
+   {
+    "date": "2026-10-13",
+    "amount": 1.85
+   },
+   {
+    "date": "2026-10-14",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-15",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-16",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-17",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-18",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-19",
+    "amount": 131.6
+   },
+   {
+    "date": "2026-10-20",
+    "amount": 99.46
+   },
+   {
+    "date": "2026-10-21",
+    "amount": 0.0
+   },
+   {
+    "date": "2026-10-22",
+    "amount": 88.22
+   }
+  ],
+  "max": {
+   "date": "2026-10-19",
+   "amount": 131.6,
+   "index": 24
+  },
+  "min": {
+   "date": "2026-09-25",
+   "amount": 0.0,
+   "index": 0
+  }
+ },
+ "recent": [
+  {
+   "date": "2026-10-12",
+   "merchant": "Pop Mart",
+   "amount": 64.92,
+   "cat": "购物",
+   "account": "Discover it …1272",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-13",
+   "merchant": "365 VEND",
+   "amount": 1.85,
+   "cat": "餐饮",
+   "account": "Discover it …1272",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Walmart",
+   "amount": 10.0,
+   "cat": "超市",
+   "account": "Venture X …1324",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Big Pines Lodge",
+   "amount": 78.74,
+   "cat": "旅行",
+   "account": "CREDIT CARD …5804",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-19",
+   "merchant": "Craft Burger & Brew",
+   "amount": 42.86,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Caddo Lake Lighthouse",
+   "amount": 40.0,
+   "cat": "其他",
+   "account": "CREDIT CARD …5804",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Rueggenbach Brewing Co",
+   "amount": 59.46,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "Tutto Gustoso",
+   "amount": 84.02,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  }
+ ],
+ "monthly": [
+  {
+   "ym": "2026-01",
+   "income": 5800.17,
+   "expense": 1831.41,
+   "balance": 3968.76,
+   "rate": 68.4
+  },
+  {
+   "ym": "2026-02",
+   "income": 3646.91,
+   "expense": 291.2,
+   "balance": 3355.71,
+   "rate": 92.0
+  },
+  {
+   "ym": "2026-03",
+   "income": 3718.02,
+   "expense": -313.8,
+   "balance": 4031.82,
+   "rate": 108.4
+  },
+  {
+   "ym": "2026-04",
+   "income": 9834.7,
+   "expense": 4163.34,
+   "balance": 5671.36,
+   "rate": 57.7
+  },
+  {
+   "ym": "2026-05",
+   "income": 7022.08,
+   "expense": 2379.42,
+   "balance": 4642.66,
+   "rate": 66.1
+  },
+  {
+   "ym": "2026-06",
+   "income": 4109.3,
+   "expense": 315.43,
+   "balance": 3793.87,
+   "rate": 92.3
+  },
+  {
+   "ym": "2026-07",
+   "income": 5786.94,
+   "expense": 766.89,
+   "balance": 5020.05,
+   "rate": 86.7
+  },
+  {
+   "ym": "2026-08",
+   "income": 4425.33,
+   "expense": 280.42,
+   "balance": 4144.91,
+   "rate": 93.7
+  },
+  {
+   "ym": "2026-09",
+   "income": 9341.12,
+   "expense": 1342.74,
+   "balance": 7998.38,
+   "rate": 85.6
+  },
+  {
+   "ym": "2026-10",
+   "income": 3989.28,
+   "expense": 386.05,
+   "balance": 3603.23,
+   "rate": 90.3
+  }
+ ],
+ "monthly_total": {
+  "income": 57673.85,
+  "expense": 11443.1,
+  "balance": 46230.75,
+  "rate": 80.2
+ },
+ "combo": {
+  "max": 9834.7,
+  "min": 3355.71,
+  "latest_income": 3989,
+  "latest_ym": "2026-10"
+ }
+}
+/*DATA_END*/;
+// 智能分析卡片：静态快照，refresh.py 永不改动（口径对齐前不自动生成）
+const ANALYSIS = [
+  { title: "📊 本月总结", items: [
+    "2026年10月共支出 $386.05（10 笔），日均 $16.78；收入 $3,989.28，结余 $3,603.23。",
+    "最大分类：餐饮 $192.39，占本月支出 49.8%；最大单笔：10月22日 Tutto Gustoso $84.02（餐饮）。",
+    "笔数最多的商家：365 Vend 共 3 笔，合计 $6.05。"
+  ]},
+  { title: "⚠️ 异常消费", items: [
+    "本月暂无异常消费：没有 ≥ $1,000 的单笔，也没有明显高于该商家日常水平的消费（本月最大单笔仅 $84.02）。"
+  ]},
+  { title: "🔔 提醒", items: [
+    "待入账 3 笔共 $88.22：10月22日 Tutto Gustoso $84.02、365 Vend $2.10 × 2，尚未正式入账。",
+    "365 Vend 在 10月22日出现 2 笔同金额 $2.10，如非两次购买，请留意是否重复扣款。"
+  ]}
+];
+const PIE_COLORS = ["#a8bfa5", "#d9b8a3", "#93a8bb", "#c9a9a9", "#b5a8c8", "#cfc4a5"];
+const PIE_DARK = ["#7d9b76", "#c0857d", "#5b7fa6", "#a97e7e", "#8778a3", "#a5936d"];
+const CAT_COLORS = {"餐饮":"#c0857d","超市":"#7d9b76","购物":"#b5a8c8","房租":"#93a8bb","水电网":"#a8bfa5","交通":"#5b7fa6","娱乐":"#d9b8a3","医疗":"#a97e7e","旅行":"#87a8a0","订阅":"#8778a3","转账":"#a5936d","其他":"#9aa39d"};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = n => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const fmtSign = n => (n > 0 ? "+$" : n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+const pctTxt = p => p == null ? "—" : (p > 0 ? "+" + p.toFixed(1) : p < 0 ? "−" + Math.abs(p).toFixed(1) : "0.0") + "%";
+const O = DATA.overview || {};
+</script>
+<script>
+"use strict";
+/* ---------- 总览 ---------- */
+(function renderOverview() {
+  const momWord = O.mom_pct == null ? "" : O.mom_pct < 0 ? "比上月少花" : O.mom_pct > 0 ? "比上月多花" : "与上月持平";
+  const metrics = [
+    ["上月总支出", fmt(O.prev_expense)],
+    ["本月最大单笔", O.max_single ? fmt(O.max_single.amount) : "—"],
+    ["年累计支出", fmt(O.ytd_expense)], ["日均支出", fmt(O.daily_avg)],
+    ["上月收入", fmt(O.prev_income)],
+    ["12个月储蓄率", (DATA.monthly_total && DATA.monthly_total.rate != null) ? DATA.monthly_total.rate.toFixed(1) + "%" : "—"]
+  ];
+  document.getElementById("panel0").innerHTML = `
+  <div class="card">
+    <div class="sub" style="margin:0">本月结余</div>
+    <div class="big-balance">${fmt(O.balance)}</div>
+    <div class="bar-row"><span class="lab">收入</span><div class="bar-track"><div class="bar-fill inc"></div></div><span class="val">${fmt(O.income)}</span></div>
+    <div class="bar-row"><span class="lab">支出</span><div class="bar-track"><div class="bar-fill exp" style="width:${Math.min(100, Math.max(0, O.expense_bar_pct || 0))}%"></div></div><span class="val">${fmt(O.expense)}</span></div>
+    <div class="sub" style="margin:10px 0 0">支出占收入 ${O.expense_bar_pct == null ? "—" : O.expense_bar_pct.toFixed(1) + "%"} · ${esc(momWord)} ${pctTxt(O.mom_pct)}</div>
+  </div>
+  <h2 class="sec-title">核心指标</h2><div class="mgrid">
+    ${metrics.map(m => `<div class="mcard"><div class="k">${m[0]}</div><div class="v">${m[1]}</div></div>`).join("")}
+  </div>
+  <div class="card"><h2>本月分类占比</h2>
+    <div class="sub">本月总支出 ${fmt(DATA.total_expense)} · 点扇区查看明细</div>
+    <div class="pie-box">
+      <svg id="pieSvg" viewBox="0 0 352 200" role="img" aria-label="分类占比饼图"></svg>
+      <div class="pie-center" id="pieCenter"></div>
+    </div>
+    <div class="legend" id="pieLegend"></div>
+  </div>
+  <div class="card analysis"><h2>智能分析</h2>
+    <div class="sub">2026-10-23 快照 · 暂未纳入自动刷新</div>
+    ${ANALYSIS.map(s => `<div class="a-sec">${esc(s.title)}</div>${s.items.map(a => `<div class="a-item">${esc(a)}</div>`).join("")}`).join("")}
+  </div>`;
+  document.getElementById("ymLabel").textContent = O.month_title || "";
+  document.getElementById("snapDate").textContent = DATA.generated_for_date || "";
+})();
+
+/* ---------- 饼图（实心，点选） ---------- */
+(function pie() {
+  const svg = document.getElementById("pieSvg");
+  const center = document.getElementById("pieCenter");
+  const legend = document.getElementById("pieLegend");
+  const items = (DATA.pie || []).filter(p => p.amount > 0);
+  const total = items.reduce((s, p) => s + p.amount, 0);
+  const cx = 176, cy = 100, r = 82;
+  let sel = -1, acc = -Math.PI / 2;
+  const paths = [];
+  function pt(a) { return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function showCenter() {
+    if (sel < 0) {
+      center.classList.remove("show");
+      center.innerHTML = "";
+    } else {
+      const p = items[sel];
+      center.classList.add("show");
+      center.innerHTML = `<div class="n">${esc(p.name)}</div><div class="p">占比 ${p.pct.toFixed(1)}%</div><div class="a">${fmt(p.amount)}</div>`;
+    }
+  }
+  items.forEach((p, i) => {
+    const frac = total ? p.amount / total : 0;
+    const a0 = acc, a1 = acc + frac * Math.PI * 2;
+    acc = a1;
+    let d;
+    if (frac >= 0.9999) {
+      d = `M ${cx} ${cy} m ${-r} 0 a ${r} ${r} 0 1 0 ${2 * r} 0 a ${r} ${r} 0 1 0 ${-2 * r} 0 Z`;
+    } else {
+      const [x0, y0] = pt(a0), [x1, y1] = pt(a1);
+      d = `M ${cx} ${cy} L ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r} ${r} 0 ${frac > 0.5 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} Z`;
+    }
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", d);
+    path.setAttribute("fill", PIE_COLORS[i % PIE_COLORS.length]);
+    path.classList.add("slice");
+    path.addEventListener("click", ev => {
+      ev.stopPropagation();
+      sel = (sel === i) ? -1 : i;
+      paths.forEach((q, j) => {
+        q.style.transform = (j === sel) ? "scale(1.07)" : "";
+        q.style.opacity = (sel < 0 || j === sel) ? "1" : "0.4";
+        q.style.filter = (j === sel) ? "brightness(1.13)" : "";
+      });
+      showCenter();
+    });
+    svg.appendChild(path);
+    paths.push(path);
+  });
+  legend.innerHTML = items.map((p, i) =>
+    `<div class="li"><span class="dot" style="background:${PIE_DARK[i % PIE_DARK.length]}"></span><span class="nm">${esc(p.name)}</span><span class="pc">${p.pct.toFixed(1)}%</span><span class="am">${fmt(p.amount)}</span></div>`).join("");
+  showCenter();
+})();
+</script>
+<script>
+"use strict";
+/* ---------- 支出 ---------- */
+(function renderExpense() {
+  const D = DATA.daily || {days: []};
+  const badge = i => `<span class="rank${i < 3 ? " r" + (i + 1) : ""}">${i + 1}</span>`;
+  const cats = [...(DATA.categories || [])].sort((a, b) => b.amount - a.amount);
+  const cpct = c => DATA.total_expense ? (c.amount / DATA.total_expense * 100) : 0;
+  document.getElementById("panel1").innerHTML = `
+  <div class="card"><h2>分类明细</h2><div class="sub">本月 12 分类 · 按净额（含退款）· 占比降序</div>
+    ${cats.map(c => `<div><div class="row" style="border-bottom:0;padding-bottom:3px"><span class="l">${esc(c.name)}</span><span class="r">${fmt(c.amount)} <span class="meta">${cpct(c).toFixed(1).replace("-", "−")}%</span></span></div><div class="cat-bar"><div style="width:${Math.max(0, Math.min(100, cpct(c)))}%;background:${CAT_COLORS[c.name] || "#9aa39d"}"></div></div></div>`).join("")}
+    <div class="row"><span class="l"><b>合计</b></span><span class="r">${fmt(DATA.total_expense)}</span></div>
+  </div>
+  <div class="card"><h2>Top 10 单笔</h2><div class="sub">仅本月正数 · 金额降序</div>
+    ${(DATA.top10 || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.merchant)} <span class="meta">${esc(t.date.slice(5))} · ${esc(t.cat)}</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+  </div>
+  <div class="card"><h2>Top 5 商家</h2><div class="sub">按显示名分组求和 · 附笔数</div>
+    ${(DATA.top_merchants || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.name)} <span class="meta">× ${t.count} 笔</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+  </div>
+  <div class="card"><h2>最近 30 天</h2>
+    <div class="sub">实际窗口 ${esc(D.start || "")} 至 ${esc(D.end || "")} · 共 28 天 · 峰值 ${esc((D.max || {}).date || "")} ${fmt((D.max || {}).amount || 0)}</div>
+    <div id="dailyChart"></div>
+    <span class="capsule" id="dailyInfo">点一根柱子看当天金额</span>
+  </div>
+  <div class="card"><h2>最近交易</h2><div class="sub">本月月表前 15 行（Sheet 顺序）</div>
+    ${(DATA.recent || []).map(t => `<div class="row"><span class="l">${esc(t.merchant)} <span class="meta">${esc(t.date.slice(5))} · ${esc(t.cat)}${t.status === "待入账" ? " · 待入账" : ""}</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+  </div>`;
+})();
+
+/* ---------- 每日柱状图（可点） ---------- */
+(function dailyChart() {
+  const box = document.getElementById("dailyChart");
+  const info = document.getElementById("dailyInfo");
+  const D = DATA.daily || {days: [], max: {}, min: {}};
+  const days = D.days || [];
+  if (!days.length) return;
+  const W = box.clientWidth || 358, H = 138;
+  const maxV = Math.max(0, D.max.amount || 0), minV = Math.min(0, D.min.amount || 0);
+  // 顶部留 22px 给峰值金额标签，避免标签与最高柱重合；底部留 4px
+  const topSpace = 22, botSpace = 4, plotH = H - topSpace - botSpace;
+  const zeroY = maxV === minV ? topSpace + plotH : topSpace + (maxV / (maxV - minV)) * plotH; // 距顶像素
+  const zero = document.createElement("div");
+  zero.className = "zero"; zero.style.top = zeroY + "px";
+  box.appendChild(zero);
+  const slotW = W / days.length;
+  let sel = -1;
+  const bars = [];
+  days.forEach((d, i) => {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.style.left = (i * slotW) + "px"; slot.style.width = slotW + "px";
+    const bar = document.createElement("div");
+    bar.className = "dbar" + (i === D.max.index ? " peak" : "") + (d.amount < 0 ? " refund" : "");
+    const h = (maxV === minV) ? 0 : Math.abs(d.amount) / (maxV - minV) * plotH;
+    bar.style.height = Math.max(d.amount === 0 ? 0 : 2, h) + "px";
+    if (d.amount >= 0) { bar.style.top = (zeroY - h) + "px"; bar.style.transformOrigin = "50% 100%"; }
+    else { bar.style.top = zeroY + "px"; bar.style.transformOrigin = "50% 0%"; }
+    slot.appendChild(bar);
+    bars.push(bar);
+    slot.addEventListener("click", ev => {
+      ev.stopPropagation();
+      select(sel === i ? -1 : i);
+    });
+    box.appendChild(slot);
+    if (i === D.max.index) {
+      const lab = document.createElement("div");
+      lab.className = "peaklab"; lab.textContent = fmt(d.amount);
+      lab.style.left = (i * slotW + slotW / 2) + "px";
+      lab.style.top = Math.max(0, zeroY - h - 14) + "px";
+      box.appendChild(lab);
+    }
+  });
+  function select(i) {
+    sel = i;
+    box.classList.toggle("dim", sel >= 0);
+    bars.forEach((b, j) => {
+      b.classList.toggle("sel", j === sel);
+      b.style.transform = j === sel ? "translateX(-50%) scale(1.4, 1.08)" : "translateX(-50%)";
+    });
+    if (sel < 0) info.textContent = "点一根柱子看当天金额";
+    else {
+      const d = days[sel];
+      info.textContent = d.amount < 0 ? `${d.date} · 净退款 ${fmt(d.amount)}` : `${d.date} · ${fmt(d.amount)}`;
+    }
+  }
+  box.addEventListener("click", () => select(-1));
+})();
+</script>
+<script>
+"use strict";
+/* ---------- 结余 ---------- */
+(function renderBalance() {
+  const M = DATA.monthly || [], C = DATA.combo || {}, T = DATA.monthly_total || {};
+  const ymFmt = ym => `${ym.slice(0, 4)} ${parseInt(ym.slice(5, 7), 10)}月`;
+  const signCls = v => v == null ? "" : v < 0 ? "neg" : v > 0 ? "pos" : "";
+  document.getElementById("panel2").innerHTML = `
+  <div class="card"><h2>月度收支结余趋势</h2>
+    <div class="sub">最大值 ${fmt(C.max || 0)} · 结余最小值 ${fmt(C.min || 0)} · 最新月收入 $${(C.latest_income || 0).toLocaleString("en-US")}</div>
+    <svg id="comboSvg" viewBox="0 0 352 208" style="width:100%;height:auto;display:block"></svg>
+    <div class="sub" style="margin:6px 0 0"><span style="color:#7d9b76">■</span> 收入&nbsp; <span style="color:#c0857d">■</span> 支出&nbsp; <span style="color:#5b7fa6">—</span> 结余</div>
+  </div>
+  <div class="card"><h2>月度明细</h2><div class="sub">最近 12 个月 · 已去掉收入支出都为 0 的月份</div>
+    <table class="month"><thead><tr><th>月份</th><th>收入</th><th>支出</th><th>结余</th><th>储蓄率</th></tr></thead>
+    <tbody><tr class="total"><td>合计</td><td>${fmt(T.income || 0)}</td><td>${fmt(T.expense || 0)}</td><td class="${signCls(T.balance)}">${fmt(T.balance || 0)}</td><td class="${signCls(T.rate)}">${T.rate == null ? "—" : T.rate.toFixed(1) + "%"}</td></tr>
+    ${M.map(m => `<tr><td>${esc(ymFmt(m.ym))}</td><td>${fmt(m.income)}</td><td>${fmt(m.expense)}</td><td class="${signCls(m.balance)}">${fmt(m.balance)}</td><td class="${signCls(m.rate)}">${m.rate == null ? "—" : m.rate.toFixed(1) + "%"}</td></tr>`).join("")}</tbody></table>
+  </div>`;
+  // 组合图：收入/支出柱 + 结余折线（几何底线取 min(0, 结余最小值)，避免正结余月份裁掉柱子）
+  const svg = document.getElementById("comboSvg");
+  const NS = "http://www.w3.org/2000/svg";
+  const W = 352, H = 208, topPad = 18, botPad = 20;
+  const yMax = C.max || 0, yMin = Math.min(0, C.min || 0);
+  const Y = v => topPad + (yMax - v) / ((yMax - yMin) || 1) * (H - topPad - botPad);
+  const zeroEl = document.createElementNS(NS, "line");
+  zeroEl.setAttribute("x1", 0); zeroEl.setAttribute("x2", W);
+  zeroEl.setAttribute("y1", Y(0)); zeroEl.setAttribute("y2", Y(0));
+  zeroEl.setAttribute("stroke", "rgba(90,110,100,.35)");
+  svg.appendChild(zeroEl);
+  const n = M.length, slot = W / Math.max(1, n), bw = Math.min(11, slot / 4);
+  const pts = [];
+  M.forEach((m, i) => {
+    const cxm = slot * i + slot / 2;
+    [["income", "#7d9b76", -bw - 1], ["expense", "#c0857d", 1]].forEach(([k, col, off]) => {
+      const rect = document.createElementNS(NS, "rect");
+      const v = m[k], y0 = Y(Math.max(0, v)), y1 = Y(Math.min(0, v));
+      rect.setAttribute("x", cxm + off); rect.setAttribute("y", y0);
+      rect.setAttribute("width", bw); rect.setAttribute("height", Math.max(1, y1 - y0));
+      rect.setAttribute("rx", 2); rect.setAttribute("fill", col);
+      svg.appendChild(rect);
+    });
+    pts.push([cxm, Y(m.balance)]);
+    if (i === n - 1) {
+      const t = document.createElementNS(NS, "text");
+      t.setAttribute("x", Math.min(W - 26, cxm)); t.setAttribute("y", Math.max(10, Y(m.income) - 5));
+      t.setAttribute("text-anchor", "middle"); t.setAttribute("font-size", "10.5");
+      t.setAttribute("fill", "#4d6a4a"); t.setAttribute("font-weight", "650");
+      t.textContent = "$" + (C.latest_income || 0).toLocaleString("en-US");
+      svg.appendChild(t);
+    }
+    const lab = document.createElementNS(NS, "text");
+    lab.setAttribute("x", cxm); lab.setAttribute("y", H - 5);
+    lab.setAttribute("text-anchor", "middle"); lab.setAttribute("font-size", "8.5");
+    lab.setAttribute("fill", "#84918a");
+    lab.textContent = m.ym.slice(5);
+    svg.appendChild(lab);
+  });
+  if (pts.length) {
+    const pl = document.createElementNS(NS, "polyline");
+    pl.setAttribute("points", pts.map(p => p.map(v => v.toFixed(1)).join(",")).join(" "));
+    pl.setAttribute("fill", "none"); pl.setAttribute("stroke", "#5b7fa6");
+    pl.setAttribute("stroke-width", "2.4"); pl.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(pl);
+    pts.forEach(p => {
+      const c = document.createElementNS(NS, "circle");
+      c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", 2.6);
+      c.setAttribute("fill", "#5b7fa6");
+      svg.appendChild(c);
+    });
+  }
+})();
+</script>
+<script>
+"use strict";
+/* ---------- Tab 切换：点按 + 跟手滑动 + 高度插值 ---------- */
+(function tabsSwipe() {
+  const vp = document.getElementById("viewport");
+  const track = document.getElementById("track");
+  const pill = document.getElementById("pill");
+  const btns = [...document.querySelectorAll(".tabs button")];
+  const panels = [...document.querySelectorAll(".panel")];
+  const GAP = 14;
+  let cur = 0, suppressClick = false;
+  const step = () => vp.clientWidth + GAP;
+  const heights = () => panels.map(p => p.offsetHeight);
+  function pillTo(idx, frac) {
+    const w = btns[0].offsetWidth;
+    pill.style.width = w + "px";
+    pill.style.transform = `translateX(${(idx + (frac || 0)) * w}px)`;
+  }
+  function apply(offsetPx) {
+    track.style.transform = `translateX(${-cur * step() + (offsetPx || 0)}px)`;
+  }
+  function setHeight(h) { vp.style.height = h + "px"; }
+  function goTo(i, animate = true) {
+    cur = Math.max(0, Math.min(panels.length - 1, i));
+    btns.forEach((b, j) => b.classList.toggle("on", j === cur));
+    track.classList.toggle("anim", animate);
+    vp.classList.toggle("animh", animate);
+    pill.classList.toggle("anim", animate);
+    apply(0); pillTo(cur, 0); setHeight(heights()[cur]);
+    if (animate) setTimeout(() => { track.classList.remove("anim"); vp.classList.remove("animh"); pill.classList.remove("anim"); }, 520);
+  }
+  btns.forEach(b => b.addEventListener("click", () => goTo(+b.dataset.i)));
+  // 初始化
+  requestAnimationFrame(() => { pillTo(0, 0); apply(0); setHeight(heights()[0]); });
+  window.addEventListener("resize", () => { pillTo(cur, 0); apply(0); setHeight(heights()[cur]); });
+
+  let startX = 0, startY = 0, startT = 0, dragging = false, dx = 0;
+  vp.addEventListener("pointerdown", e => {
+    startX = e.clientX; startY = e.clientY; startT = performance.now();
+    dx = 0; dragging = false;
+  });
+  vp.addEventListener("pointermove", e => {
+    if (!startT) return;
+    const mx = e.clientX - startX, my = e.clientY - startY;
+    if (!dragging && Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.4) {
+      dragging = true;
+      track.classList.remove("anim"); vp.classList.remove("animh"); pill.classList.remove("anim");
+    }
+    if (!dragging) return;
+    dx = mx;
+    let eff = dx;
+    if ((cur === 0 && dx > 0) || (cur === panels.length - 1 && dx < 0)) eff = dx * 0.3; // 边缘阻尼
+    apply(eff);
+    const prog = Math.max(-1, Math.min(1, -eff / step()));
+    pillTo(cur, prog);
+    const hs = heights();
+    const target = prog > 0 ? Math.min(panels.length - 1, cur + 1) : Math.max(0, cur - 1);
+    const f = Math.abs(prog);
+    setHeight(hs[cur] + (hs[target] - hs[cur]) * f);
+  });
+  function endDrag() {
+    if (!startT) return;
+    const dt = Math.max(1, performance.now() - startT);
+    startT = 0;
+    if (!dragging) return;
+    dragging = false;
+    suppressClick = true;
+    setTimeout(() => suppressClick = false, 80);
+    let eff = dx;
+    if ((cur === 0 && dx > 0) || (cur === panels.length - 1 && dx < 0)) eff = dx * 0.3;
+    const dist = Math.abs(eff), vel = Math.abs(dx) / dt;
+    let target = cur;
+    if (eff < 0 && (dist > step() / 4 || (Math.abs(dx) > 50 && vel > 0.5))) target = cur + 1;
+    if (eff > 0 && (dist > step() / 4 || (Math.abs(dx) > 50 && vel > 0.5))) target = cur - 1;
+    goTo(target, true);
+    dx = 0;
+  }
+  vp.addEventListener("pointerup", endDrag);
+  vp.addEventListener("pointercancel", endDrag);
+  vp.addEventListener("click", e => {
+    if (suppressClick) { e.stopPropagation(); e.preventDefault(); suppressClick = false; }
+  }, true);
+})();
+</script>
+</body>
+</html>
