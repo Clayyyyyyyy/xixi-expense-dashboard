@@ -154,6 +154,16 @@
   .rank.r1 { background: #d9a94f; color: #fff; }
   .rank.r2 { background: #a9b6ba; color: #fff; }
   .rank.r3 { background: #c98a68; color: #fff; }
+  /* 两行式交易行：左侧序号 / 右侧名称 + 日期tag + 分类tag */
+  .tx-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px dashed rgba(100,115,105,.16); }
+  .tx-row:last-child { border-bottom: 0; }
+  .tx-row .rank { margin-top: 2px; flex: none; }
+  .tx-main { flex: 1; min-width: 0; }
+  .tx-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 550; }
+  .tx-tags { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+  .tag { font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; line-height: 1.4; }
+  .tag-date { background: rgba(90,110,100,.10); color: #66736c; }
+  .tx-amt { flex: none; font-variant-numeric: tabular-nums; font-weight: 650; padding-top: 1px; }
   footer { text-align: center; font-size: 12px; color: #84918a; padding: 2px 0 0; line-height: 1.7; }
 </style>
 </head>
@@ -508,19 +518,51 @@ const DATA = /*DATA_START*/
  },
  "recent": [
   {
-   "date": "2026-10-12",
-   "merchant": "Pop Mart",
-   "amount": 64.92,
-   "cat": "购物",
-   "account": "Discover it …1272",
+   "date": "2026-10-23",
+   "merchant": "Tutto Gustoso",
+   "amount": 84.02,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
    "status": "已入账"
   },
   {
-   "date": "2026-10-13",
-   "merchant": "365 VEND",
-   "amount": 1.85,
+   "date": "2026-10-23",
+   "merchant": "In-N-Out Burger",
+   "amount": 15.32,
    "cat": "餐饮",
-   "account": "Discover it …1272",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  },
+  {
+   "date": "2026-10-22",
+   "merchant": "365 Vend",
+   "amount": 2.1,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
+   "status": "待入账"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Caddo Lake Lighthouse",
+   "amount": 40.0,
+   "cat": "其他",
+   "account": "CREDIT CARD …5804",
+   "status": "已入账"
+  },
+  {
+   "date": "2026-10-20",
+   "merchant": "Rueggenbach Brewing Co",
+   "amount": 59.46,
+   "cat": "餐饮",
+   "account": "CREDIT CARD …5804",
    "status": "已入账"
   },
   {
@@ -548,52 +590,20 @@ const DATA = /*DATA_START*/
    "status": "已入账"
   },
   {
-   "date": "2026-10-20",
-   "merchant": "Caddo Lake Lighthouse",
-   "amount": 40.0,
-   "cat": "其他",
-   "account": "CREDIT CARD …5804",
+   "date": "2026-10-13",
+   "merchant": "365 VEND",
+   "amount": 1.85,
+   "cat": "餐饮",
+   "account": "Discover it …1272",
    "status": "已入账"
   },
   {
-   "date": "2026-10-20",
-   "merchant": "Rueggenbach Brewing Co",
-   "amount": 59.46,
-   "cat": "餐饮",
-   "account": "CREDIT CARD …5804",
+   "date": "2026-10-12",
+   "merchant": "Pop Mart",
+   "amount": 64.92,
+   "cat": "购物",
+   "account": "Discover it …1272",
    "status": "已入账"
-  },
-  {
-   "date": "2026-10-23",
-   "merchant": "Tutto Gustoso",
-   "amount": 84.02,
-   "cat": "餐饮",
-   "account": "CREDIT CARD …5804",
-   "status": "已入账"
-  },
-  {
-   "date": "2026-10-22",
-   "merchant": "365 Vend",
-   "amount": 2.1,
-   "cat": "餐饮",
-   "account": "CREDIT CARD …5804",
-   "status": "待入账"
-  },
-  {
-   "date": "2026-10-22",
-   "merchant": "365 Vend",
-   "amount": 2.1,
-   "cat": "餐饮",
-   "account": "CREDIT CARD …5804",
-   "status": "待入账"
-  },
-  {
-   "date": "2026-10-23",
-   "merchant": "In-N-Out Burger",
-   "amount": 15.32,
-   "cat": "餐饮",
-   "account": "CREDIT CARD …5804",
-   "status": "待入账"
   }
  ],
  "monthly": [
@@ -704,6 +714,13 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt
 const fmt = n => (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fmtSign = n => (n > 0 ? "+$" : n < 0 ? "−$" : "$") + Math.abs(n).toLocaleString("en-US", {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const pctTxt = p => p == null ? "—" : (p > 0 ? "+" + p.toFixed(1) : p < 0 ? "−" + Math.abs(p).toFixed(1) : "0.0") + "%";
+// 分类 tag 文字色：按分类色亮度自适应（浅色用深字、深色用白字）
+const tagText = hex => {
+  const h = (hex || "#9aa39d").replace("#", "");
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? "#39413f" : "#fff";
+};
+const catTag = cat => { const c = CAT_COLORS[cat] || "#9aa39d"; return `<span class="tag" style="background:${c};color:${tagText(c)}">${esc(cat)}</span>`; };
 const O = DATA.overview || {};
 </script>
 <script>
@@ -813,7 +830,7 @@ const O = DATA.overview || {};
     <div class="row"><span class="l"><b>合计</b></span><span class="r">${fmt(DATA.total_expense)}</span></div>
   </div>
   <div class="card"><h2>Top 10 单笔</h2><div class="sub">仅本月正数 · 金额降序</div>
-    ${(DATA.top10 || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.merchant)} <span class="meta">${esc(t.date.slice(5))} · ${esc(t.cat)}</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+    ${(DATA.top10 || []).map((t, i) => `<div class="tx-row">${badge(i)}<div class="tx-main"><div class="tx-name">${esc(t.merchant)}</div><div class="tx-tags"><span class="tag tag-date">${esc(t.date.slice(5))}</span>${catTag(t.cat)}</div></div><span class="tx-amt">${fmt(t.amount)}</span></div>`).join("")}
   </div>
   <div class="card"><h2>Top 5 商家</h2><div class="sub">按显示名分组求和 · 附笔数</div>
     ${(DATA.top_merchants || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.name)} <span class="meta">× ${t.count} 笔</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
@@ -823,8 +840,8 @@ const O = DATA.overview || {};
     <div id="dailyChart"></div>
     <span class="capsule" id="dailyInfo">点一根柱子看当天金额</span>
   </div>
-  <div class="card"><h2>最近交易</h2><div class="sub">本月月表前 15 行（Sheet 顺序）</div>
-    ${(DATA.recent || []).map(t => `<div class="row"><span class="l">${esc(t.merchant)} <span class="meta">${esc(t.date.slice(5))} · ${esc(t.cat)}${t.status === "待入账" ? " · 待入账" : ""}</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+  <div class="card"><h2>最近交易</h2><div class="sub">本月最新 15 笔 · 按日期倒序</div>
+    ${[...(DATA.recent || [])].sort((a, b) => b.date.localeCompare(a.date)).map(t => `<div class="tx-row"><div class="tx-main"><div class="tx-name">${esc(t.merchant)}${t.status === "待入账" ? " <span class=\"meta\">· 待入账</span>" : ""}</div><div class="tx-tags"><span class="tag tag-date">${esc(t.date.slice(5))}</span>${catTag(t.cat)}</div></div><span class="tx-amt${t.amount < 0 ? " pos" : ""}">${fmt(t.amount)}</span></div>`).join("")}
   </div>`;
 })();
 
