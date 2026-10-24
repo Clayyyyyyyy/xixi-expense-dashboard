@@ -141,6 +141,7 @@
   table.month th:first-child, table.month td:first-child { text-align: left; }
   table.month thead th { color: #77847c; font-weight: 500; border-bottom: 1px solid rgba(100,115,105,.25); }
   table.month tbody tr { border-bottom: 1px dashed rgba(100,115,105,.14); }
+  table.month tbody td:first-child { font-weight: 700; }
   table.month tfoot td { font-weight: 700; border-top: 1.5px solid rgba(100,115,105,.35); }
   table.month tr.total td { font-weight: 700; background: rgba(255,255,255,.38); border-bottom: 1.5px solid rgba(100,115,105,.35); }
   .analysis .a-sec { font-size: 14.5px; font-weight: 700; margin: 12px 0 2px; }
@@ -148,6 +149,7 @@
   .analysis .a-item { padding: 7px 0 7px 2px; border-bottom: 1px dashed rgba(100,115,105,.16); font-size: 14px; }
   .analysis .a-item:last-child { border-bottom: 0; }
   /* 分类占比条与名次徽章 */
+  .cat-pct { font-size: 11px; color: #aab5ad; margin-left: 6px; font-variant-numeric: tabular-nums; }
   .cat-bar { height: 6px; border-radius: 99px; background: rgba(90,110,100,.12); overflow: hidden; margin: 1px 0 9px; }
   .cat-bar > div { height: 100%; border-radius: 99px; }
   .rank { display: inline-block; min-width: 21px; text-align: center; border-radius: 7px; padding: 1px 3px; margin-right: 7px; font-weight: 700; font-size: 13px; color: #77847c; background: rgba(90,110,100,.08); }
@@ -826,7 +828,7 @@ const O = DATA.overview || {};
   const cpct = c => DATA.total_expense ? (c.amount / DATA.total_expense * 100) : 0;
   document.getElementById("panel1").innerHTML = `
   <div class="card"><h2>分类明细</h2><div class="sub">本月 12 分类 · 按净额（含退款）· 占比降序</div>
-    ${cats.map(c => `<div><div class="row" style="border-bottom:0;padding-bottom:3px"><span class="l">${esc(c.name)}</span><span class="r">${fmt(c.amount)} <span class="meta">${cpct(c).toFixed(1).replace("-", "−")}%</span></span></div><div class="cat-bar"><div style="width:${Math.max(0, Math.min(100, cpct(c)))}%;background:${CAT_COLORS[c.name] || "#9aa39d"}"></div></div></div>`).join("")}
+    ${cats.map(c => `<div><div class="row" style="border-bottom:0;padding-bottom:3px"><span class="l">${esc(c.name)}<span class="cat-pct">${cpct(c).toFixed(1).replace("-", "−")}%</span></span><span class="r">${fmt(c.amount)}</span></div><div class="cat-bar"><div style="width:${Math.max(0, Math.min(100, cpct(c)))}%;background:${CAT_COLORS[c.name] || "#9aa39d"}"></div></div></div>`).join("")}
     <div class="row"><span class="l"><b>合计</b></span><span class="r">${fmt(DATA.total_expense)}</span></div>
   </div>
   <div class="card"><h2>Top 10 单笔</h2><div class="sub">仅本月正数 · 金额降序</div>
