@@ -367,27 +367,42 @@ const DATA = /*DATA_START*/
   {
    "name": "Tutto Gustoso",
    "amount": 84.02,
-   "count": 1
+   "count": 1,
+   "cats": [
+    "餐饮"
+   ]
   },
   {
    "name": "Big Pines Lodge",
    "amount": 78.74,
-   "count": 1
+   "count": 1,
+   "cats": [
+    "旅行"
+   ]
   },
   {
    "name": "Pop Mart",
    "amount": 64.92,
-   "count": 1
+   "count": 1,
+   "cats": [
+    "购物"
+   ]
   },
   {
    "name": "Rueggenbach Brewing Co",
    "amount": 59.46,
-   "count": 1
+   "count": 1,
+   "cats": [
+    "餐饮"
+   ]
   },
   {
    "name": "Craft Burger & Brew",
    "amount": 42.86,
-   "count": 1
+   "count": 1,
+   "cats": [
+    "餐饮"
+   ]
   }
  ],
  "daily": {
@@ -835,7 +850,7 @@ const O = DATA.overview || {};
     ${(DATA.top10 || []).map((t, i) => `<div class="tx-row">${badge(i)}<div class="tx-main"><div class="tx-name">${esc(t.merchant)}</div><div class="tx-tags"><span class="tag tag-date">${esc(t.date.slice(5))}</span>${catTag(t.cat)}</div></div><span class="tx-amt">${fmt(t.amount)}</span></div>`).join("")}
   </div>
   <div class="card"><h2>Top 5 商家</h2><div class="sub">按显示名分组求和 · 附笔数</div>
-    ${(DATA.top_merchants || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.name)} <span class="meta">× ${t.count} 笔</span></span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
+    ${(DATA.top_merchants || []).map((t, i) => `<div class="row"><span class="l">${badge(i)}${esc(t.name)} <span class="meta">× ${t.count} 笔</span> ${(t.cats || []).map(catTag).join(" ")}</span><span class="r">${fmt(t.amount)}</span></div>`).join("")}
   </div>
   <div class="card"><h2>最近 30 天</h2>
     <div class="sub">实际窗口 ${esc(D.start || "")} 至 ${esc(D.end || "")} · 共 28 天 · 峰值 ${esc((D.max || {}).date || "")} ${fmt((D.max || {}).amount || 0)}</div>
